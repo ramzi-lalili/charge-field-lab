@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Charge Field Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: header bar over a two-column workbench (3D stage | control panel); stacks at phone width. */
+:root {
+  --bg: #eef1f6;
+  --surface: #ffffff;
+  --surface-2: #f2f5fa;
+  --ink: #121826;
+  --muted: #566176;
+  --line: #d3dae6;
+  --accent: #b36b00;
+  --accent-ink: #ffffff;
+  --accent-soft: #fbeccd;
+  --pos: #d8372a;
+  --neg: #2563d6;
+  --ok: #1a7f4b;
+  --bad: #c0322b;
+  --stage-ink: #e8eef7;
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1118; --surface: #131a24; --surface-2: #1a2230; --ink: #e6ecf5; --muted: #8f9db2; --line: #263143;
+    --accent: #f0b648; --accent-ink: #1a1305; --accent-soft: #3a2c10; --pos: #ff6a5c; --neg: #5b9bff; --ok: #4cc58a; --bad: #ff7a70;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c1118; --surface: #131a24; --surface-2: #1a2230; --ink: #e6ecf5; --muted: #8f9db2; --line: #263143;
+  --accent: #f0b648; --accent-ink: #1a1305; --accent-soft: #3a2c10; --pos: #ff6a5c; --neg: #5b9bff; --ok: #4cc58a; --bad: #ff7a70;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.45 var(--font-ui);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px; overflow: hidden;
+}
+#app { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 10px; min-width: 0; }
+button, select, input { font: inherit; color: inherit; }
+button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* header */
+header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.brand { display: flex; align-items: baseline; gap: 8px; margin-right: auto; min-width: 0; }
+.brand h1 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; }
+.brand span { color: var(--muted); font-family: var(--font-data); font-size: 11px; white-space: nowrap; }
+.bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.btn { background: var(--surface); border: 1px solid var(--line); border-radius: 7px; padding: 6px 11px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+.btn.rec { background: var(--bad); color: #fff; border-color: transparent; }
+.btn[disabled] { opacity: .45; cursor: default; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: transparent; padding: 6px 11px; cursor: pointer; border-right: 1px solid var(--line); }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"], .seg button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+select { background: var(--surface); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; max-width: 100%; }
+
+/* workbench */
+main { display: grid; grid-template-columns: minmax(0, 1fr) 348px; gap: 12px; min-height: 0; min-width: 0; }
+#stage { position: relative; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); min-height: 0; min-width: 0; background: #0b0f16; }
+#host { position: absolute; inset: 0; }
+.hud { position: absolute; font-family: var(--font-data); font-size: 11.5px; color: var(--stage-ink); background: rgba(10, 14, 20, .78); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; padding: 8px 10px; backdrop-filter: blur(4px); pointer-events: none; }
+#probecard { left: 10px; bottom: 10px; min-width: 232px; }
+#probecard h3 { margin: 0 0 5px; font: 600 10.5px var(--font-ui); letter-spacing: .08em; text-transform: uppercase; color: #a9b7cc; display: flex; justify-content: space-between; gap: 10px; }
+#probecard dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 1px 12px; }
+#probecard dt { color: #8fa0b8; }
+#probecard dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#legend { right: 10px; top: 10px; width: 210px; }
+#legend .bar-grad { height: 9px; border-radius: 3px; margin: 4px 0 3px; }
+#legend .ticks { display: flex; justify-content: space-between; color: #b6c3d6; }
+#legend .ttl { font: 600 10.5px var(--font-ui); letter-spacing: .08em; text-transform: uppercase; color: #a9b7cc; }
+#hint { right: 10px; bottom: 10px; max-width: 320px; text-align: right; color: #a9b7cc; font-family: var(--font-ui); font-size: 11px; }
+#statline { left: 10px; top: 10px; color: #b6c3d6; }
+#toast { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 6px 12px; border-radius: 7px; font-size: 12px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 5; white-space: nowrap; }
+#toast.show { opacity: 1; }
+#nogl { position: absolute; inset: 0; display: none; place-items: center; padding: 24px; text-align: center; color: #e8eef7; }
+
+/* panel */
+aside { min-height: 0; min-width: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.tabs { display: grid; grid-template-columns: repeat(5, 1fr); border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.tabs button { border: 0; background: transparent; padding: 9px 2px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; font-weight: 500; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); background: var(--surface); }
+.pane { overflow-y: auto; padding: 12px 14px 18px; min-height: 0; display: none; }
+.pane.on { display: block; }
+/* always-visible scroll bar for every tab panel (Scene, Field, Display, Tools, Docs) */
+.pane { overflow-y: scroll; scrollbar-width: thin; scrollbar-color: var(--muted) var(--surface-2); scrollbar-gutter: stable; }
+.pane::-webkit-scrollbar { width: 12px; }
+.pane::-webkit-scrollbar-track { background: var(--surface-2); border-left: 1px solid var(--line); }
+.pane::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 8px; border: 3px solid var(--surface-2); min-height: 40px; }
+.pane::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+.group { border-top: 1px solid var(--line); padding: 12px 0 4px; }
+.group:first-child { border-top: 0; padding-top: 0; }
+.group > h2 { margin: 0 0 8px; font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.row { display: grid; grid-template-columns: 112px minmax(0, 1fr) 54px; align-items: center; gap: 8px; margin: 0 0 7px; }
+.row.two { grid-template-columns: 112px minmax(0, 1fr); }
+.row label { color: var(--muted); }
+.row output { font-family: var(--font-data); font-size: 11.5px; text-align: right; font-variant-numeric: tabular-nums; }
+.row input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
+.row select, .row input[type=number] { width: 100%; }
+input[type=number] { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font-family: var(--font-data); font-size: 12px; min-width: 0; }
+.row .seg { width: 100%; } .row .seg button { flex: 1; padding: 5px 4px; }
+.xyz { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.chk { display: flex; align-items: center; gap: 8px; margin: 0 0 7px; cursor: pointer; }
+.chk input { accent-color: var(--accent); margin: 0; width: 15px; height: 15px; }
+.chk span.sub { color: var(--muted); margin-left: auto; font-size: 11px; font-family: var(--font-data); }
+.note { color: var(--muted); font-size: 12px; margin: 2px 0 8px; }
+.note b { color: var(--ink); font-weight: 600; }
+.clist { display: grid; gap: 4px; margin-bottom: 8px; }
+.citem { display: grid; grid-template-columns: 12px 1fr auto; gap: 8px; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); cursor: pointer; text-align: left; }
+.citem[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.citem i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+.citem small { font-family: var(--font-data); color: var(--muted); }
+.btnrow { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 8px; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tbl td { padding: 5px 4px; vertical-align: top; border-top: 1px solid var(--line); }
+.tbl td:first-child { width: 44px; font-family: var(--font-data); font-weight: 500; }
+.tbl .d { color: var(--muted); font-family: var(--font-data); font-size: 11px; display: block; margin-top: 2px; word-break: break-word; }
+.pass { color: var(--ok); } .fail { color: var(--bad); }
+.doc h3 { font-size: 13px; margin: 14px 0 4px; }
+.doc p, .doc li { color: var(--ink); margin: 0 0 6px; }
+.doc ul { padding-left: 18px; margin: 0 0 8px; }
+.doc code, .doc pre { font-family: var(--font-data); font-size: 11.5px; }
+.doc pre { background: var(--surface-2); border: 1px solid var(--line); border-radius: 7px; padding: 9px 10px; overflow-x: auto; margin: 4px 0 10px; }
+.doc :not(pre) > code { background: var(--surface-2); padding: 1px 4px; border-radius: 4px; }
+.doc table { border-collapse: collapse; width: 100%; font-size: 12px; margin-bottom: 8px; }
+.doc td { border-top: 1px solid var(--line); padding: 4px 4px; vertical-align: top; }
+.doc td:first-child { font-family: var(--font-data); white-space: nowrap; padding-right: 10px; }
+.eq { font-family: var(--font-data); font-size: 11.5px; background: var(--surface-2); border-radius: 6px; padding: 6px 8px; margin: 4px 0 8px; overflow-x: auto; white-space: pre; }
+
+@media (max-width: 860px) {
+  body { overflow: auto; }
+  #app { height: auto; min-height: 100%; }
+  main { grid-template-columns: minmax(0, 1fr); grid-template-rows: 62vh auto; }
+  aside { max-height: none; }
+  .pane { overflow: visible; scrollbar-gutter: auto; }
+  #legend { width: 170px; } #hint { display: none; }
+  .brand span { display: none; }
+}
+@media (max-width: 520px) {
+  #probecard { min-width: 0; right: 10px; } #probecard .vec { display: none; } #legend { top: 10px; width: 150px; } #statline { display: none; }
+  .row { grid-template-columns: 96px minmax(0, 1fr) 46px; }
+}
+@media (prefers-reduced-motion: reduce) { #toast { transition: none; } }
+</style>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><h1>Charge Field Lab</h1><span>E · B · φ of point charges</span></div>
+    <div class="bar">
+      <label class="sr" for="preset" style="position:absolute;left:-9999px">Preset scene</label>
+      <select id="preset" aria-label="Preset scene"></select>
+      <div class="seg" id="fieldSeg" role="group" aria-label="Field type">
+        <button type="button" data-v="E" aria-pressed="true" title="Electric field E">E</button>
+        <button type="button" data-v="B" aria-pressed="false" title="Magnetic field B">B</button>
+      </div>
+      <button type="button" class="btn primary" id="playBtn" aria-label="Play or pause">Pause</button>
+      <button type="button" class="btn" id="shotBtn">Screenshot</button>
+      <button type="button" class="btn" id="recBtn">Record</button>
+    </div>
+  </header>
+  <main>
+    <section id="stage" aria-label="3D field view">
+      <div id="host"></div>
+      <div id="nogl"><div><b>WebGL 2 is not available.</b><br>This demo needs a browser with hardware-accelerated WebGL 2 (current Chrome, Edge, Firefox or Safari).</div></div>
+      <div id="statline" class="hud"></div>
+      <div id="legend" class="hud"></div>
+      <div id="probecard" class="hud" aria-live="off"></div>
+      <div id="hint" class="hud">Drag a charge or the ◆ probe · drag empty space to orbit · double-click adds a charge (Shift: negative) · Del removes · Shift-drag keeps height</div>
+      <div id="toast" role="status"></div>
+    </section>
+    <aside aria-label="Controls">
+      <div class="tabs" role="tablist" id="tabs">
+        <button type="button" role="tab" data-tab="scene" aria-selected="true">Scene</button>
+        <button type="button" role="tab" data-tab="field" aria-selected="false">Field</button>
+        <button type="button" role="tab" data-tab="display" aria-selected="false">Display</button>
+        <button type="button" role="tab" data-tab="tools" aria-selected="false">Tools</button>
+        <button type="button" role="tab" data-tab="about" aria-selected="false">Docs</button>
+      </div>
+      <div id="panes"></div>
+    </aside>
+  </main>
+</div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

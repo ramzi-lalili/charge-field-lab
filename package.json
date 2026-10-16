@@ -1,0 +1,11 @@
+{
+  "name": "charge-field-lab",
+  "version": "1.0.0",
+  "description": "Interactive WebGL demo of point-charge E and B fields (Coulomb, Biot-Savart, Lienard-Wiechert)",
+  "type": "module",
+  "scripts": {
+    "start": "npx --yes serve . -l 8080",
+    "test": "node tests/run.mjs"
+  },
+  "license": "MIT"
+}
